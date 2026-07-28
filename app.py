@@ -29,10 +29,9 @@ app.add_middleware(
 # Create upload folder
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# FIX: Create templates with proper configuration and disable caching
+# Fix: Create templates with cache disabled to avoid issues
 templates = Jinja2Templates(directory="templates")
-# Disable caching to fix the unhashable type error
-templates.env.cache = None
+templates.env.cache = None  # Disable caching
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -62,9 +61,8 @@ pipeline = {
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page endpoint"""
-    # FIX: Create a clean context dict and ensure request is properly passed
-    context = {"request": request}
-    return templates.TemplateResponse("index.html", context)
+    # FIX: Pass context as a dictionary directly
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/status")
