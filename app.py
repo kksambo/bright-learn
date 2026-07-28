@@ -30,16 +30,17 @@ app.add_middleware(
 # Create upload folder
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# BEST APPROACH: Configure Jinja2 properly with cache control
+# BEST APPROACH: Create Jinja2 environment and templates properly
 template_env = Environment(
     loader=FileSystemLoader("templates"),
     autoescape=select_autoescape(['html', 'xml']),
     auto_reload=True,
-    cache_size=400,  # Limit cache size instead of disabling completely
+    cache_size=400,  # Limit cache size to avoid memory issues
     extensions=['jinja2.ext.i18n']
 )
 
-templates = Jinja2Templates(directory="templates", env=template_env)
+# Pass ONLY the env parameter, NOT directory
+templates = Jinja2Templates(env=template_env)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -69,7 +70,6 @@ pipeline = {
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page endpoint"""
-    # Return template with properly formatted context
     return templates.TemplateResponse(
         "index.html", 
         {"request": request}
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     
     uvicorn.run(
         "app:app",
-        host="0.0.0.0",  # Changed to 0.0.0.0 for better accessibility
+        host="0.0.0.0",
         port=8000,
         reload=True,
         log_level="info"
