@@ -3,7 +3,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import shutil
 import asyncio
@@ -30,17 +29,10 @@ app.add_middleware(
 # Create upload folder
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# BEST APPROACH: Create Jinja2 environment and templates properly
-template_env = Environment(
-    loader=FileSystemLoader("templates"),
-    autoescape=select_autoescape(['html', 'xml']),
-    auto_reload=True,
-    cache_size=400,  # Limit cache size to avoid memory issues
-    extensions=['jinja2.ext.i18n']
-)
-
-# Pass ONLY the env parameter, NOT directory
-templates = Jinja2Templates(env=template_env)
+# FIX: Create templates with proper configuration and disable caching
+templates = Jinja2Templates(directory="templates")
+# Disable caching to fix the unhashable type error
+templates.env.cache = None
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -70,10 +62,9 @@ pipeline = {
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page endpoint"""
-    return templates.TemplateResponse(
-        "index.html", 
-        {"request": request}
-    )
+    # FIX: Create a clean context dict and ensure request is properly passed
+    context = {"request": request}
+    return templates.TemplateResponse("index.html", context)
 
 
 @app.get("/status")
