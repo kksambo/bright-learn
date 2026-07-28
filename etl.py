@@ -1,5 +1,6 @@
 import asyncio
 import time
+import os
 from extract import extract_and_load_staging
 from transform import (
     clean_data,
@@ -9,7 +10,7 @@ from transform import (
     create_transaction_dimension,
     create_sales_fact,
 )
-from load import PostgreSQLLoader
+from load import SQLiteLoader
 
 
 async def run_pipeline(csv_path, pipeline, db_config):
@@ -20,8 +21,9 @@ async def run_pipeline(csv_path, pipeline, db_config):
 
     pipeline["status"] = "Extract"
 
-    pipeline["logs"].append("Reading CSV...")
+    pipeline["logs"].append(f"Reading CSV: {os.path.basename(csv_path)}")
 
+    # Extract - using the same function but now it should work with SQLite
     df = extract_and_load_staging(csv_path)
 
     pipeline["rows"] = len(df)
@@ -61,15 +63,11 @@ async def run_pipeline(csv_path, pipeline, db_config):
 
     pipeline["status"] = "Load"
 
-    pipeline["logs"].append("Connecting to PostgreSQL")
+    pipeline["logs"].append("Connecting to SQLite database")
 
-    loader = PostgreSQLLoader(
-        host=db_config["host"],
-        port=db_config["port"],
-        database=db_config["database"],
-        username=db_config["username"],
-        password=db_config["password"],
-    )
+    # Use SQLiteLoader instead of PostgreSQLLoader
+    database_path = db_config.get("database_path", "brightlearn_data.db")
+    loader = SQLiteLoader(database_path=database_path)
 
     loader.test_connection()
 
@@ -83,23 +81,15 @@ async def run_pipeline(csv_path, pipeline, db_config):
 
     for name, table in tables:
         loader.load_table(table, name)
-
-        pipeline["logs"].append(f"Loaded {name}")
-
+        pipeline["logs"].append(f"Loaded {name} ({len(table)} records)")
         pipeline["progress"] += 6
-
         await asyncio.sleep(0.8)
 
     loader.close()
 
     pipeline["progress"] = 100
-
     pipeline["status"] = "Completed"
-
     pipeline["time"] = round(time.time() - start, 2)
 
     pipeline["logs"].append("ETL Completed Successfully")
-
-    pipeline["logs"].append(
-        f"Execution Time : {pipeline['time']} seconds"
-    )
+    pipeline["logs"].append(f"Execution Time: {pipeline['time']} seconds")
