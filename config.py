@@ -1,11 +1,13 @@
-# Configuration settings for the ETL application
-
+# Database configuration
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 5434,
-    "database": "postgres",
-    "username": "postgres",
-    "password": "postgres",
+    "database_path": "brightlearn_data.db",  # SQLite database file
+    # For backward compatibility with etl.py
+    "host": None,
+    "port": None,
+    "database": None,
+    "username": None,
+    "password": None,
 }
 
+# Upload folder
 UPLOAD_FOLDER = "uploads"
